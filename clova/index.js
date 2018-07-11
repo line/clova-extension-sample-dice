@@ -77,6 +77,16 @@ class CEKRequest {
     switch (intent) {
     case 'ThrowDiceIntent':
       let diceCount = 1
+      if (!!slots) { 
+        const diceCountSlot = slots.diceCount 
+        if (slots.length != 0 && diceCountSlot) { 
+          diceCount = parseInt(diceCountSlot.value) 
+        } 
+ 
+        if (isNaN(diceCount)) { 
+          diceCount = 1 
+        } 
+      } 
       cekResponse.appendSpeechText(`サイコロを ${diceCount}個 投げます。`)
       cekResponse.appendSpeechText({
         lang: 'ja',
