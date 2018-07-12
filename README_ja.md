@@ -10,6 +10,7 @@ https://nodejs.org/ja/download/current/
 1) Node.jsをインストールする: https://nodejs.org/ja/download/current/
 2) ソースコードをダウンロードする: git clone https://github.com/line/clova-extension-sample-dice.git
 3) 依存ライブラリをインストールする: npm install
+4) config.js を編集し、"com.example.dice"を登録済みのExtension IDへ書き換える
 
 ### 使い方
 「サイコロ遊び」ExtensionのREST APIサーバーは、ClovaプラットフォームからのExtensionリクエストに応じて適切な応答をするようになっています。APIサーバーを実行する場合、正常に動作しているかを確認するために、Clovaプラットフォームが送信するのと同じAPIを送信する必要がある点に留意してください。実際にサービスを行う際には、外部からhttpsでアクセス可能なドメインにする必要があります。
@@ -38,6 +39,9 @@ https://nodejs.org/ja/download/current/
       },
       "device": {
         "deviceId": "3657ade7-e219-4a76-84c4-b701bae8350c"
+      },
+      "application": {
+        "applicationId": "com.example.dice"
       }
     }
   },
