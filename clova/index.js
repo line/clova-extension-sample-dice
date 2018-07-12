@@ -170,7 +170,11 @@ const clovaReq = function (httpReq, httpRes, next) {
   const signature = httpReq.headers.signaturecek
   cekResponse = new CEKResponse()
   cekRequest = new CEKRequest(httpReq)
-  verifier(signature, ExtensionId, JSON.stringify(cekRequest))
+  try{
+    verifier(signature, ExtensionId, JSON.stringify(httpReq.body))
+  }catch(e){
+    return httpRes.status(400).send(e.message)
+  }
   cekRequest.do(cekResponse)
   console.log(`CEKResponse: ${JSON.stringify(cekResponse)}`)
   return httpRes.send(cekResponse)
