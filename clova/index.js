@@ -1,6 +1,7 @@
 const uuid = require('uuid').v4
 const _ = require('lodash')
-const { DOMAIN } = require('../config')
+const { DOMAIN, ExtensionId } = require('../config')
+var verifier = require('../util/verifier.js')
 
 class Directive {
   constructor({namespace, name, payload}) {
@@ -166,8 +167,10 @@ class CEKResponse {
 }
 
 const clovaReq = function (httpReq, httpRes, next) {
+  const signature = httpReq.headers.signaturecek
   cekResponse = new CEKResponse()
   cekRequest = new CEKRequest(httpReq)
+  verifier(signature, ExtensionId, JSON.stringify(cekRequest))
   cekRequest.do(cekResponse)
   console.log(`CEKResponse: ${JSON.stringify(cekResponse)}`)
   return httpRes.send(cekResponse)
