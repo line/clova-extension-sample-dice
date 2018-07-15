@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@line/clova-cek-sdk-nodejs": "^1.0.1",
     "body-parser": "^1.18.2",
     "cookie-parser": "^1.4.3",
     "crypto": "^1.0.1",

@@ -1,20 +1,10 @@
+const Clova = require('@line/clova-cek-sdk-nodejs');
 const uuid = require('uuid').v4
 const _ = require('lodash')
 const { DOMAIN, ExtensionId } = require('../config')
 var verifier = require('../util/verifier.js')
 
-class Directive {
-  constructor({namespace, name, payload}) {
-    this.header = {
-      messageId: uuid(),
-      namespace: namespace,
-      name: name,
-    }
-    this.payload = payload
-  }
-}
-
-function resultText({midText, sum, diceCount}) {
+function resultText({ midText, sum, diceCount }) {
   if (diceCount == 1) {
     return `結果は ${sum} です。`
   } else if (diceCount < 4) {
@@ -39,145 +29,55 @@ function throwDice(diceCount) {
   }
 
   midText = midText.replace(/, $/, '')
-  return {midText, sum, diceCount}
+  return { midText, sum, diceCount }
 }
 
-class CEKRequest {
-  constructor (httpReq) {
-    this.request = httpReq.body.request
-    this.context = httpReq.body.context
-    this.session = httpReq.body.session
-    console.log(`CEK Request: ${JSON.stringify(this.context)}, ${JSON.stringify(this.session)}`)
-  }
-
-  do(cekResponse) {
-    switch (this.request.type) {
-      case 'LaunchRequest':
-        return this.launchRequest(cekResponse)
-      case 'IntentRequest':
-        return this.intentRequest(cekResponse)
-      case 'SessionEndedRequest':
-        return this.sessionEndedRequest(cekResponse)
-    }
-  }
-
-  launchRequest(cekResponse) {
-    console.log('launchRequest')
-    cekResponse.setSimpleSpeechText('いくつのサイコロを投げますか?')
-    cekResponse.setMultiturn({
-      intent: 'ThrowDiceIntent',
-    })
-  }
-
-  intentRequest(cekResponse) {
-    console.log('intentRequest')
-    console.dir(this.request)
-    const intent = this.request.intent.name
-    const slots = this.request.intent.slots
+const clovaSkillHandler = Clova.Client
+  .configureSkill()
+  .onLaunchRequest(responseHelper => {
+    responseHelper.setSimpleSpeech(
+      Clova.SpeechBuilder.createSpeechText('いくつのサイコロを投げますか?')
+    );
+  })
+  .onIntentRequest(async responseHelper => {
+    const intent = responseHelper.getIntentName();
+    const slots = responseHelper.getSlots();
 
     switch (intent) {
-    case 'ThrowDiceIntent':
-      let diceCount = 1
-      if (!!slots) { 
-        const diceCountSlot = slots.diceCount 
-        if (slots.length != 0 && diceCountSlot) { 
-          diceCount = parseInt(diceCountSlot.value) 
-        } 
- 
-        if (isNaN(diceCount)) { 
-          diceCount = 1 
-        } 
-      } 
-      cekResponse.appendSpeechText(`サイコロを ${diceCount}個 投げます。`)
-      cekResponse.appendSpeechText({
-        lang: 'ja',
-        type: 'URL',
-        value: `${DOMAIN}/rolling_dice_sound.mp3`,
-      })
-      const throwResult = throwDice(diceCount)
-      cekResponse.appendSpeechText(resultText(throwResult))
-      break
-    case 'Clova.GuideIntent': 
-    default: 
-      cekResponse.setSimpleSpeechText("サイコロを1個投げて、と言ってみてください。") 
+      case 'ThrowDiceIntent':
+        let diceCount = 1
+        if (!!slots) {
+          const diceCountSlot = slots.diceCount
+          if (slots.length != 0 && diceCountSlot) {
+            diceCount = parseInt(diceCountSlot.value)
+          }
+
+          if (isNaN(diceCount)) {
+            diceCount = 1
+          }
+        }
+        const throwResult = throwDice(diceCount)
+
+        responseHelper.setSpeechList([
+          Clova.SpeechBuilder.createSpeechText(`サイコロを ${diceCount}個 投げます。`),
+          Clova.SpeechBuilder.createSpeechUrl(`${DOMAIN}/rolling_dice_sound.mp3`),
+          Clova.SpeechBuilder.createSpeechText(resultText(throwResult))
+        ]);
+        break
+      case 'Clova.GuideIntent':
+      default:
+        responseHelper.setSpeechList(
+          Clova.SpeechBuilder.createSpeechText("サイコロを1個投げて、と言ってみてください。")
+        );
+        break;
     }
+  })
+  .onSessionEndedRequest(responseHelper => {
+    const sessionId = responseHelper.getSessionId();
 
-    if (this.session.new == false) {
-      cekResponse.setMultiturn()
-    }
-  }
+    // Do something on session end
+    responseHelper.endSession();
+  })
+  .handle();
 
-  sessionEndedRequest(cekResponse) {
-    console.log('sessionEndedRequest')
-    cekResponse.setSimpleSpeechText('サイコロを終了します。')
-    cekResponse.clearMultiturn()
-  }
-}
-
-class CEKResponse {
-  constructor () {
-    console.log('CEKResponse constructor')
-    this.response = {
-      directives: [],
-      shouldEndSession: true,
-      outputSpeech: {},
-      card: {},
-    }
-    this.version = '0.1.0'
-    this.sessionAttributes = {}
-  }
-
-  setMultiturn(sessionAttributes) {
-    this.response.shouldEndSession = false
-    this.sessionAttributes = _.assign(this.sessionAttributes, sessionAttributes)
-  }
-
-  clearMultiturn() {
-    this.response.shouldEndSession = true
-    this.sessionAttributes = {}
-  }
-
-  setSimpleSpeechText(outputText) {
-    this.response.outputSpeech = {
-      type: 'SimpleSpeech',
-      values: {
-          type: 'PlainText',
-          lang: 'ja',
-          value: outputText,
-      },
-    }
-  }
-
-  appendSpeechText(outputText) {
-    const outputSpeech = this.response.outputSpeech
-    if (outputSpeech.type != 'SpeechList') {
-      outputSpeech.type = 'SpeechList'
-      outputSpeech.values = []
-    }
-    if (typeof(outputText) == 'string') {
-      outputSpeech.values.push({
-        type: 'PlainText',
-        lang: 'ja',
-        value: outputText,
-      })
-    } else {
-      outputSpeech.values.push(outputText)
-    }
-  }
-}
-
-const clovaReq = function (httpReq, httpRes, next) {
-  const signature = httpReq.headers.signaturecek
-  cekResponse = new CEKResponse()
-  cekRequest = new CEKRequest(httpReq)
-  try{
-    verifier(signature, ExtensionId, JSON.stringify(httpReq.body))
-  }catch(e){
-    return httpRes.status(400).send(e.message)
-  }
-  cekRequest.do(cekResponse)
-  console.log(`CEKResponse: ${JSON.stringify(cekResponse)}`)
-  return httpRes.send(cekResponse)
-};
-
-module.exports = clovaReq;
+module.exports = clovaSkillHandler;
