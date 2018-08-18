@@ -171,7 +171,7 @@ const clovaReq = function (httpReq, httpRes, next) {
   cekResponse = new CEKResponse()
   cekRequest = new CEKRequest(httpReq)
   try{
-    verifier(signature, ExtensionId, JSON.stringify(httpReq.body))
+//    verifier(signature, ExtensionId, JSON.stringify(httpReq.body))
   }catch(e){
     return httpRes.status(400).send(e.message)
   }
