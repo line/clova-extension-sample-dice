@@ -15,6 +15,7 @@ https://nodejs.org/ja/download/current/
 ### 使い方
 「サイコロ遊び」ExtensionのREST APIサーバーは、ClovaプラットフォームからのExtensionリクエストに応じて適切な応答をするようになっています。APIサーバーを実行する場合、正常に動作しているかを確認するために、Clovaプラットフォームが送信するのと同じAPIを送信する必要がある点に留意してください。実際にサービスを行う際には、外部からhttpsでアクセス可能なドメインにする必要があります。
 - APIサーバーの実行: node app.js
+  - signatureのverificationを無効にする場合、 `DEBUG=true node app.js` を実行します。
 - APIサーバーのテスト: Postmanで下記のようにJSONリクエストを送信して、JSONが応答するかテストしてみます。
     - URL: http://localhost:3000/clova
     - リクエスト方法: POST
